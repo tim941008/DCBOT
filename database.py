@@ -1,0 +1,53 @@
+import logging
+
+from supabase import create_client
+
+from config import get_env_variable
+
+logger = logging.getLogger(__name__)
+
+
+def create_supabase_client():
+    url = get_env_variable("SUPABASE_URL")
+    key = get_env_variable("SUPABASE_KEY")
+    return create_client(url, key)
+
+
+def get_tracking_records(supabase):
+    try:
+        response = supabase.table("tracking_list").select("*").execute()
+        return response.data or []
+    except Exception as error:
+        logger.exception("讀取 Supabase 追蹤清單失敗：%s", error)
+        return []
+
+
+def get_user_tracking_records(supabase, user_id: str):
+    try:
+        response = supabase.table("tracking_list").select("*").eq("user_id", user_id).execute()
+        return response.data or []
+    except Exception as error:
+        logger.exception("讀取 Supabase 使用者追蹤失敗：%s", error)
+        return []
+
+
+def insert_tracking_record(supabase, user_id: str, course_no: str, course_name: str) -> bool:
+    try:
+        supabase.table("tracking_list").insert({
+            "user_id": user_id,
+            "course_no": course_no,
+            "course_name": course_name,
+        }).execute()
+        return True
+    except Exception as error:
+        logger.exception("新增追蹤紀錄失敗：%s", error)
+        return False
+
+
+def delete_tracking_record(supabase, user_id: str, course_no: str) -> bool:
+    try:
+        result = supabase.table("tracking_list").delete().eq("user_id", user_id).eq("course_no", course_no).execute()
+        return bool(result.data)
+    except Exception as error:
+        logger.exception("刪除追蹤紀錄失敗：%s", error)
+        return False
