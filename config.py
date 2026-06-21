@@ -7,6 +7,8 @@ ROOT_DIR = Path(__file__).resolve().parent
 load_dotenv(ROOT_DIR / ".env")
 
 COURSE_API_URL = "https://querycourse.ntust.edu.tw/QueryCourse/api/courses"
+COURSE_QUERY_URL = "https://querycourse.ntust.edu.tw/querycourse/#/"
+COURSE_SELECTION_URL = "https://courseselection.ntust.edu.tw/Home/Index"
 COURSE_SEMESTER = "1151"
 
 

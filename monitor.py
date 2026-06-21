@@ -1,4 +1,6 @@
 from discord.ext import tasks
+import discord
+from config import COURSE_SELECTION_URL
 from formatters import create_course_embed
 from course_api import build_course_payload, fetch_course_data
 from database import get_tracking_records
@@ -38,7 +40,9 @@ def setup_monitor(bot, supabase):
                         f"🚨 **通知：你追蹤的課程「{course_name} ({course_no})」有名額了！剩餘 {remaining} 個！**"
                     )
                     embed = create_course_embed(courses[0], title="🔥 搶課警報！有名額了")
-                    await user.send(embed=embed)
+                    view = discord.ui.View()
+                    view.add_item(discord.ui.Button(label="前往選課系統", style=discord.ButtonStyle.link, url=COURSE_SELECTION_URL))
+                    await user.send(embed=embed, view=view)
                     notified_courses.add(course_no)
                 except Exception as error:
                     print(f"❌ 無法私訊使用者 {user_id}: {error}")
