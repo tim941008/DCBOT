@@ -34,13 +34,24 @@ def get_user_tracking_records(supabase, user_id: str):
 def insert_tracking_record(supabase, user_id: str, course_no: str, course_name: str, threshold: int = 1) -> bool:
     """新增追蹤紀錄，支援可選的通知門檻 `threshold`（預設 1）。"""
     try:
-        supabase.table("tracking_list").insert({
+        existing = (
+            supabase.table("tracking_list")
+            .select("user_id,course_no")
+            .eq("user_id", user_id)
+            .eq("course_no", course_no)
+            .execute()
+        )
+        if existing.data:
+            logger.info("追蹤紀錄已存在：user_id=%s course_no=%s", user_id, course_no)
+            return False
+
+        result = supabase.table("tracking_list").insert({
             "user_id": user_id,
             "course_no": course_no,
             "course_name": course_name,
             "threshold": int(threshold),
         }).execute()
-        return True
+        return bool(result.data)
     except Exception as error:
         logger.exception("新增追蹤紀錄失敗：%s", error)
         return False

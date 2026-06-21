@@ -7,9 +7,9 @@ name = "pypi"
 "discord.py" = "*"
 python-dotenv = "*"
 aiohttp = "*"
-beautifulsoup4 = "*"
+supabase = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.13"
+python_version = "3.10"
