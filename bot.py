@@ -5,7 +5,7 @@ from discord.ext import commands
 
 from course_api import build_course_payload, fetch_course_data, normalize_course_no
 from database import delete_tracking_record, get_user_tracking_records, insert_tracking_record
-from formatters import format_course_card, format_course_status, format_search_results
+from formatters import format_course_card, format_course_status, format_search_results, create_course_embed
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,55 @@ class CourseTrackingCog(commands.Cog):
 
         course = courses[0]
         await ctx.send(format_course_card(course))
+
+    @commands.command(name="按鈕")
+    async def button_course(self, ctx: commands.Context, course_no: str) -> None:
+        """顯示課程嵌入與互動按鈕（加入 / 刪除追蹤）。"""
+        course_no = normalize_course_no(course_no)
+        await ctx.send(f"🔍 正在查詢課號「{course_no}」，請稍候...")
+        payload = build_course_payload(course_no=course_no)
+        courses = await fetch_course_data(payload)
+
+        if not courses:
+            await ctx.send(f"❌ 找不到課號 {course_no} 的課程，請確認課號是否正確。")
+            return
+
+        course = courses[0]
+        embed = create_course_embed(course)
+
+        class TrackView(discord.ui.View):
+            def __init__(self, supabase, author_id: int, timeout: float = 180.0):
+                super().__init__(timeout=timeout)
+                self.supabase = supabase
+                self.author_id = author_id
+
+            @discord.ui.button(label="加追蹤", style=discord.ButtonStyle.green)
+            async def add_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+                if interaction.user.id != self.author_id:
+                    await interaction.response.send_message("只有原始使用者可操作此按鈕。", ephemeral=True)
+                    return
+
+                course_name = course.get("CourseName", "未知課程")
+                success = insert_tracking_record(self.supabase, str(interaction.user.id), course_no, course_name)
+                if success:
+                    await interaction.response.send_message(f"📌 已將 **{course_name} ({course_no})** 加入你的追蹤清單。", ephemeral=True)
+                else:
+                    await interaction.response.send_message("⚠️ 加入失敗或已存在於追蹤清單。", ephemeral=True)
+
+            @discord.ui.button(label="刪追蹤", style=discord.ButtonStyle.red)
+            async def remove_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+                if interaction.user.id != self.author_id:
+                    await interaction.response.send_message("只有原始使用者可操作此按鈕。", ephemeral=True)
+                    return
+
+                deleted = delete_tracking_record(self.supabase, str(interaction.user.id), course_no)
+                if deleted:
+                    await interaction.response.send_message(f"🗑️ 已將課號 **{course_no}** 從你的追蹤清單移除。", ephemeral=True)
+                else:
+                    await interaction.response.send_message("❓ 移除失敗或清單中不存在該課程。", ephemeral=True)
+
+        view = TrackView(self.supabase, ctx.author.id)
+        await ctx.send(embed=embed, view=view)
 
     @commands.command(name="指令", aliases=["help", "幫助"])
     async def list_commands(self, ctx: commands.Context) -> None:
