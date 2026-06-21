@@ -1,5 +1,5 @@
 from discord.ext import tasks
-
+from formatters import create_course_embed
 from course_api import build_course_payload, fetch_course_data
 from database import get_tracking_records
 
@@ -37,6 +37,8 @@ def setup_monitor(bot, supabase):
                     await user.send(
                         f"🚨 **通知：你追蹤的課程「{course_name} ({course_no})」有名額了！剩餘 {remaining} 個！**"
                     )
+                    embed = create_course_embed(courses[0], title="🔥 搶課警報！有名額了")
+                    await user.send(embed=embed)
                     notified_courses.add(course_no)
                 except Exception as error:
                     print(f"❌ 無法私訊使用者 {user_id}: {error}")

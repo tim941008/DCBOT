@@ -122,10 +122,57 @@ def create_bot(supabase):
     @bot.event
     async def on_ready():
         logger.info("✅ Bot 已登入：%s", bot.user)
+        # ensure we only initialize once (on reconnects this runs again)
+        if getattr(bot, "_initialized", False):
+            return
+        # 註冊 Cog（discord.py 新版本 add_cog 可能為 coroutine）
+        try:
+            await bot.add_cog(CourseTrackingCog(bot, supabase))
+            bot._initialized = True
+        except Exception:
+            # fallback: try sync add_cog if coroutine wasn't expected
+            try:
+                bot.add_cog(CourseTrackingCog(bot, supabase))
+                bot._initialized = True
+            except Exception:
+                logger.exception("無法註冊 Cog")
+
+        # 在 bot 啟動後再啟動監控任務，確保 event loop 已就緒
+        try:
+            from monitor import setup_monitor
+
+            monitor_task = setup_monitor(bot, supabase)
+            monitor_task.start()
+            logger.info("✅ 自動監聽系統 (monitor.py) 已啟動！")
+        except Exception:
+            logger.exception("無法啟動監控任務")
 
     @bot.event
     async def on_command_error(ctx: commands.Context, error: Exception) -> None:
         original = getattr(error, "original", error)
+        # 處理缺少必要參數的情況，給使用者友善提示與用法
+        try:
+            from discord.ext.commands import MissingRequiredArgument
+
+            if isinstance(original, MissingRequiredArgument):
+                param_name = getattr(original, "param", None)
+                if param_name and hasattr(param_name, "name"):
+                    param_display = param_name.name
+                else:
+                    param_display = str(original)
+
+                if ctx and getattr(ctx, "command", None):
+                    usage = f"{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}"
+                else:
+                    usage = "請參考指令說明使用方式"
+
+                await ctx.send(f"⚠️ 缺少必要參數：`{param_display}`。用法：{usage}")
+                return
+        except Exception:
+            # 若檢查 MissingRequiredArgument 過程發生錯誤，繼續到一般錯誤處理
+            pass
+
+        # 其他未處理的錯誤，記錄並回報簡短訊息
         logger.exception("指令執行錯誤：%s", original)
         try:
             if hasattr(ctx, "send"):
@@ -133,5 +180,4 @@ def create_bot(supabase):
         except Exception:
             pass
 
-    bot.add_cog(CourseTrackingCog(bot, supabase))
     return bot
