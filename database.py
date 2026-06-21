@@ -31,12 +31,14 @@ def get_user_tracking_records(supabase, user_id: str):
         return []
 
 
-def insert_tracking_record(supabase, user_id: str, course_no: str, course_name: str) -> bool:
+def insert_tracking_record(supabase, user_id: str, course_no: str, course_name: str, threshold: int = 1) -> bool:
+    """新增追蹤紀錄，支援可選的通知門檻 `threshold`（預設 1）。"""
     try:
         supabase.table("tracking_list").insert({
             "user_id": user_id,
             "course_no": course_no,
             "course_name": course_name,
+            "threshold": int(threshold),
         }).execute()
         return True
     except Exception as error:
@@ -50,4 +52,14 @@ def delete_tracking_record(supabase, user_id: str, course_no: str) -> bool:
         return bool(result.data)
     except Exception as error:
         logger.exception("刪除追蹤紀錄失敗：%s", error)
+        return False
+
+
+def update_tracking_threshold(supabase, user_id: str, course_no: str, threshold: int) -> bool:
+    """更新使用者針對單一課程的通知門檻值。回傳是否更新成功。"""
+    try:
+        result = supabase.table("tracking_list").update({"threshold": int(threshold)}).eq("user_id", user_id).eq("course_no", course_no).execute()
+        return bool(result.data)
+    except Exception as error:
+        logger.exception("更新追蹤門檻失敗：%s", error)
         return False

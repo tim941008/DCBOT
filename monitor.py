@@ -33,7 +33,13 @@ def setup_monitor(bot, supabase):
             maximum = int(courses[0].get("Restrict2", 0))
             remaining = maximum - current
 
-            if remaining > 0 and course_no not in notified_courses:
+            # 使用每筆追蹤紀錄上的 threshold（預設 1）來判斷是否通知
+            try:
+                threshold = int(item.get("threshold", 1))
+            except Exception:
+                threshold = 1
+
+            if remaining >= threshold and course_no not in notified_courses:
                 try:
                     user = await bot.fetch_user(user_id)
                     await user.send(
