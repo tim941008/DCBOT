@@ -9,12 +9,12 @@ logger = logging.getLogger(__name__)
 _session: aiohttp.ClientSession | None = None
 
 
-def build_course_payload(course_no: str = "", course_name: str = "") -> dict:
+def build_course_payload(course_no: str = "", course_name: str = "", course_teacher: str = "") -> dict:
     return {
         "Semester": COURSE_SEMESTER,
         "CourseNo": course_no,
         "CourseName": course_name,
-        "CourseTeacher": "",
+        "CourseTeacher": course_teacher,
         "Dimension": "",
         "CourseNotes": "",
         "CampusNotes": "",

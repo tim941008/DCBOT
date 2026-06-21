@@ -1,5 +1,6 @@
 import discord
 from course_api import normalize_course_no
+from math import ceil
 
 
 def format_course_status(current: int, maximum: int) -> str:
@@ -25,13 +26,21 @@ def format_course_card(course: dict) -> str:
     )
 
 
-def format_search_results(courses: list[dict], keyword: str, limit: int = 5) -> str:
+def format_search_results(courses: list[dict], keyword: str, page: int = 0, limit: int = 5) -> str:
     if not courses:
         return f"❌ 找不到相關課程，請換個關鍵字再試試。"
 
-    result_lines = [f"✅ 找到了！以下是 **{keyword}** 的前 {min(limit, len(courses))} 筆搜尋結果：\n\n"]
-    for course in courses[:limit]:
+    total_pages = max(1, ceil(len(courses) / limit))
+    page = min(max(page, 0), total_pages - 1)
+    start = page * limit
+    page_courses = courses[start:start + limit]
+    result_lines = [
+        f"✅ 找到了！以下是 **{keyword}** 的第 {page + 1}/{total_pages} 頁，顯示 {len(page_courses)} 筆搜尋結果（共 {len(courses)} 筆）：\n\n"
+    ]
+    for course in page_courses:
         result_lines.append(format_course_card(course))
+    if total_pages > 1:
+        result_lines.append("如需查看更多結果，請使用「上一頁」與「下一頁」按鈕瀏覽。\n")
     return "".join(result_lines)
 
 

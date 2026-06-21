@@ -10,6 +10,7 @@ COURSE_API_URL = "https://querycourse.ntust.edu.tw/QueryCourse/api/courses"
 COURSE_QUERY_URL = "https://querycourse.ntust.edu.tw/querycourse/#/"
 COURSE_SELECTION_URL = "https://courseselection.ntust.edu.tw/Home/Index"
 COURSE_SEMESTER = "1151"
+ADMIN_NOTIFY_USER_ID = os.getenv("ADMIN_NOTIFY_USER_ID", "")
 
 
 def get_env_variable(name: str, required: bool = True) -> str:
